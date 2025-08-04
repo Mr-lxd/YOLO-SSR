@@ -14,25 +14,27 @@ This project is based on and extends the work of [You Only Look at Once for Real
   
 | Model                   | AP<sub>50<sub> | AP<sub>75<sub> | AP<sub>50-95<sub> | AP<sub>s<sub> | AP<sub>m<sub>  | AP<sub>l<sub>  | AP<sub>mc<sub> | AP<sub>vt<sub> | FPS   | Inference Time(ms) | parameters | GFLOPs |
 | :---------------------- | :--: | :--: | :-----: | :-: | :--: | :--: | :--: | :--: | :---: | :----------------: | :--------: | :----: |
-| YOLOv8n                 | 59.2 | 13.5 | 23.2    | 1   | 17   | 35.9 | 23.2 | 33.8 | 131.6 | 7.6                | 3.01M      | 8.1    |
-| YOLOv12n                | 57.9 | 13.6 | 23.1    | 0.7 | 16.4 | 36.9 | 23.1 | 34.2 | 526.3 | 1.9                | 2.56M      | 6.3    |
-| DINO(ResNet50)          | 64.7 | 12.7 | 24.5    | 2.3 | 19.5 | 34.8 | 24.5 | 32   | 19.5  | 51.3               | 47.54M     | 235    |
-| Dynamic R-CNN(ResNet50) | 30.7 | 4.3  | 10.8    | 0   | 8.5  | 16.7 | 11.6 | 0.8  | 22.1  | 45.2               | 41.348M    | 178    |
-| RTMDet(CSPNeXt)         | 62   | 14.7 | 25.1    | 0.7 | 18.4 | 38.8 | 25   | 33.8 | 77.6  | 12.9               | 4.873M     | 8.025  |
-| TOOD(ResNet50)          | 46.9 | 6.3  | 16      | 0.3 | 11.3 | 25.7 | 16   | 17.9 | 17.4  | 57.5               | 32.018M    | 168    |
-| VarifocalNet(ResNet50)  | 46.2 | 5.4  | 15.3    | 0.7 | 10.2 | 25.3 | 15.3 | 22   | 22.8  | 43.9               | 32.709M    | 161    |
-| ours(det)               | 61.7 | 15.3 | 24.9    | 1.2 | 18.9 | 38.1 | 24.9 | 29.4 | 202   | 4.95               | 2.45M      | 10.5   |
+| YOLOv8n                 | 64.5 | 19.5 | 28.3 | 25.8 | 22.4 | 38.4 | 26.4 | 72.1 | **92.7** | 116.3 | **8.6** | 3.01M | 8.1 |
+| YOLOv12n                | 63.6 | 21.9 | 28.8 | 25.1 | 22.3 | 40.2 | 27 | 71.6 | 88.9 | 72.67 | 13.76 | 2.56M | 6.3 |
+| YOLOV13n | 52.8 | 14 | 21.8 | 16.7 | 16.6 | 31.9 | 20.3 | 62.9 | 84.4 | 74.6 | 13.4 | **2.45M** | **6.2** |
+| DINO(ResNet50) | **68.7** | 18.7 | 28.4 | **27.1** | 23.1 | 37.7 | 27.2 | 72.6 | 91.3 | 21.3 | 46.94 | 47.54M | 235 |
+| Dynamic R-CNN(ResNet50) | 41.4 | 11 | 17.2 | 18.4 | 13.5 | 24 | 15.9 | 57.5 | 76.8 | 30.76 | 33.16 | 41.348M | 178 |
+| RTMDET(CSPNeXt) | 65.8 | 22 | 29.8 | 25.6 | 23.3 | 41.5 | 28 | **73.5** | 91.8 | 87.7 | 11.55 | 4.873M | 8.025 |
+| TOOD(ResNet50) | 60.7 | 14.2 | 24.4 | 20.5 | 18.6 | 35.1 | 23.1 | 63 | 78.5 | 22.3 | 45.16 | 32.018M | 168 |
+| VarifocalNet(ResNet50) | 50.3 | 9.4 | 19 | 18.5 | 13.6 | 28.1 | 17.5 | 58.7 | 79.5 | 22.86 | 44.1 | 32.709M | 161 | 
+| ours(det) | 67.2 | **22.6** | **30.4** | 25.1 | **24** | **41.7** | **28.5** | 71.3 | 88.9 | **154.3** | **6.48** | **2.45M** | 10.5 |
 
   | Model                     | MaskAP<sub>50<sub> | MaskAP<sub>75<sub> | MaskAP<sub>50-95<sub> | mIoU  | L<sub>d_mean</sub> | L<sub>d_median</sub> | L<sub>d_std</sub> | FPS   | Inference Time(ms) | parameters | GFLOPs |
 | :------------------------ | :------: | :------: | :---------: | :---: | :-------------: | :---------------: | :-----------: | :---: | :----------------: | :--------: | :----: |
-| YOLOv8n-seg               | 99.6     | 81.5     | 64.8        | 84.67 | 33.35           | 24.85             | 19.08         | 100   | 10                 | 3.26M      | 12     |
-| YOLOv12n-seg              | 98.9     | 77.6     | 63.3        | 84.94 | 34.79           | 26.68             | 21.02         | 344.8 | 2.9                | 2.81M      | 10.2   |
-| SOLOv2(ResNet18)          | 98.9     | 77.9     | 62.7        | 88.68 | 34.9            | 26.12             | 19.36         | 29.7  | 33.7               | 18.09M     | 42.491 |
-| SOLOv2(ResNet101)         | 97.7     | 64.2     | 58          | 87.38 | 39.14           | 26.37             | 22.31         | 23.7  | 42.2               | 65.221M    | 282    |
-| RTMDet-ins(CSPNeXt)       | 99.4     | 81.1     | 64.3        | 70.37 | 33.38           | 24.75             | 20.07         | 100.6 | 9.9                | 5.615M     | 11.873 |
-| Mask R-CNN(ConvNeXt V2)   | 99.6     | 75.2     | 64.9        | 85.42 | 33.75           | 24.57             | 20.8          | 16.1  | 62.1               | 108M       | 421    |
-| SparseInst(ResNet50)      | 90.6     | 10       | 34.5        | 37.75 | 52.96           | 34.46             | 24.09         | 24.2  | 41.3               | 31.617M    | 99.22  |
-| ours(ins)                 | 93.7     | 76.8     | 60.3        | 88.72 | 34.18           | 24.14             | 19.23         | 202   | 4.95               | 2.45M      | 10.5   |  
+| YOLOV8n-seg | 99.4 | 84.7 | 68 | 87.38 | 26.79 | 20.22 | 106.2 | 9.42 | 3.26M | 12 | 
+| YOLOV12n-seg | 99.6 | 82.4 | 68 | 87.11 | 25.64 | 19 | 78.13 | 12.8 | 2.81M | 10.2 | 
+| YOLOV13n-seg | 97.8 | 69.6 | 59.8 | 75.2 | 32.14 | 22.21 | 76.9 | 13 | 2.7M | 10.1 | 
+| SOLOV2(ResNet18) | 99.7 | 81.5 | 66.5 | 89.69 | 28.22 | 18.69 | 33.4 | 29.98 | 18.09M | 42.491 | 
+| SOLOV2(ResNet101) | 99.2 | 76.1 | 64 | 88.97 | 29.01 | 19.97 | 24.52 | 40.8 | 65.221M | 282 | 
+| RTMDET-ins(CSPNeXt) | 99.3 | **85.2** | **68.5** | 78.72 | **24.63** | **16.82** | 118.48 | 8.44 | 5.615M | 11.873 | 
+| Mask R-CNN(ConvNeXt V2) | 99 | 82.2 | 67.4 | 87.14 | 26.25 | 18.74 | 18.5 | 54.08 | 108M | 421 | 
+| SparseInst(ResNet50) | 91.4 | 27 | 39.3 | 37.99 | 41.81 | 30.85 | 14.58 | 69.12 | 31.617M | 99.22 | 
+| ours(ins) | 96.1 | 74.6 | 63.7 | **89.71** | 25.24 | 19.17 | **154.3** | **6.48** | **2.45M** | 10.5 | 
   
 ## Visual Results
 
@@ -40,7 +42,7 @@ This project is based on and extends the work of [You Only Look at Once for Real
   
 ## Dataset  
 This study introduces the **SeedlingStemRow (SSR) dataset**, comprising field images of sugarcane, corn, and rice during seedling stages, with annotations for crop stems and crop rows.  
-- **Total Images:** 758 high-resolution images  
-- **Annotations:** 25,419 crop stem annotations and 758 crop row segmentation annotations.  
+- **Total Images:** 1207  
+- **Annotations:** 34440 crop annotations and 1207 crop row segmentation annotations.  
 - **Availability:** The dataset is publicly available on Kaggle:  
 [SSR Dataset on Kaggle](https://www.kaggle.com/datasets/xxdxdxd/seedlingstemrow)  

@@ -19,6 +19,8 @@ from ultralytics.yolo.utils.torch_utils import de_parallel
 import torch.nn as nn
 import math
 import contextlib
+import json
+
 class MultiValidator(BaseValidator):
 
     def __init__(self, dataloader=None, save_dir=None, pbar=None, args=None, _callbacks=None):
@@ -95,7 +97,12 @@ class MultiValidator(BaseValidator):
             metrics.plot = self.args.plots
         self.confusion_matrix={name: ConfusionMatrix(nc=self.data['nc_list'][count]) for count, name in enumerate(self.data['labels_list'])}
         self.seen = {name: 0 for name in self.data['labels_list']}
-        self.jdict = []
+        # self.jdict = []
+
+        ##### LXD #####
+        self.my_jdict = {name: [] for name in self.data['labels_list'] if 'det' in name or 'seg' in name}
+        ##### LXD #####
+
         self.stats = {name: [] for name in self.data['labels_list']}
         self.nt_per_class = {name: [] for name in self.data['labels_list']}
         ###################################
@@ -189,7 +196,7 @@ class MultiValidator(BaseValidator):
 
                 # Save
                 if self.args.save_json:
-                    self.pred_to_json(predn, batch['im_file'][si])
+                    self.pred_to_json_det(predn, batch['im_file'][si], task_name)
                 if self.args.save_txt:
                     file = self.save_dir / 'labels' / f'{Path(batch["im_file"][si]).stem}.txt'
                     self.save_one_txt(predn, self.args.save_conf, shape, file)
@@ -233,7 +240,7 @@ class MultiValidator(BaseValidator):
 
                 # Save
                 if self.args.save_json:
-                    self.pred_to_json(predn, batch['im_file'][si])
+                    self.pred_to_json_det(predn, batch['im_file'][si], task_name)
                 if self.args.save_txt:
                     file = self.save_dir / 'labels' / f'{Path(batch["im_file"][si]).stem}.txt'
                     self.save_one_txt(predn, self.args.save_conf, shape, file)
@@ -242,29 +249,15 @@ class MultiValidator(BaseValidator):
         """Metrics."""
         batch_size = len(batch['im_file'])
         mask_list = batch['masks'].to(self.device).float()
+
+        class_indices_masks = preds  # 模型输出的分割图 [B, model_H, model_W]
+
+        CROP_LINE_CLASS_ID_MODEL_OUTPUT = 1  # 从模型输出中提取的类别ID
+        COCO_CROP_LINE_CATEGORY_ID = 0  # COCO JSON中对应的类别ID
+
         for count in range(batch_size):
             gt_mask = mask_list[count].clamp_(max=1)
             pred_mask = preds[count].squeeze()
-
-
-            #####LXD
-            # modify the processing logic of the prediction mask to ensure compatibility with the yolov8_bdd.yaml
-            # pred_mask = preds[count]
-            # pred_mask = pred_mask.float()  # float32
-            # # dim [batch, channels, height, width]
-            # if pred_mask.dim() == 2:  # if dim [H, W]
-            #     pred_mask = pred_mask.unsqueeze(0).unsqueeze(0)  # -> [1, 1, H, W]
-            # elif pred_mask.dim() == 3:  # if dim [C, H, W]
-            #     pred_mask = pred_mask.unsqueeze(0)  # -> [1, C, H, W]
-            # # upsample to dim of label
-            # pred_mask = F.interpolate(
-            #     pred_mask,
-            #     size=gt_mask.shape[-2:],
-            #     mode='bilinear',
-            #     align_corners=False
-            # ).squeeze()  # 移除 batch 和 channel 维度 -> [640, 640]
-            #####
-
 
             # import matplotlib.pyplot as plt
             # gt_masks = pred_mask.cpu().numpy()
@@ -281,12 +274,61 @@ class MultiValidator(BaseValidator):
             if self.args.plots and self.batch_i < 3:
                 self.plot_masks[task_name].append(pred_mask.cpu())  # filter top 15 to plot
 
+            # 获取当前图像的原始尺寸、模型输入尺寸和 ratio_pad
+            original_shape = batch['ori_shape'][count]  # (orig_H, orig_W)
+            current_img_shape = batch['img'][count].shape[1:]  # (model_H, model_W)
+            ratio_pad = batch['ratio_pad'][count] if 'ratio_pad' in batch else None  # (ratio, (pad_w, pad_h))
+
+            # 如果 ratio_pad 不可用，你可能需要从 dataloader 或 dataset 对象中获取这些信息，
+            # 这通常是在图像预处理时计算和存储的。
+            if ratio_pad is None:
+                # Fallback or error - this info is crucial for scaling
+                # For example, if rect=False and no padding, ratio might be min(input_sz/orig_h, input_sz/orig_w)
+                # and pad would be (0,0). This is a simplification.
+                # A robust way is to ensure letterbox outputs this.
+                LOGGER.warning("ratio_pad not found in batch. Coordinates might not scale correctly for COCO JSON.")
+
+            pred_mask_single_class_indices = class_indices_masks[count]  # [model_H, model_W]
+
+            if self.args.save_json:
+                crop_line_pixels = (pred_mask_single_class_indices == CROP_LINE_CLASS_ID_MODEL_OUTPUT)
+                if torch.any(crop_line_pixels):
+                    # bbox_for_crop_line 仍然是在模型输入空间的bbox，用于predn
+                    # predn[:,:4] 应该是 xyxy 格式
+                    # 使用 pred_mask_single_class_indices 的形状来定义全图 bbox
+                    model_h, model_w = pred_mask_single_class_indices.shape
+                    # xyxy, 类别是模型输出的类别ID，因为后面会用COCO_CROP_LINE_CATEGORY_ID替换
+                    # predn_entry = torch.tensor([[0, 0, model_w, model_h, 1.0, CROP_LINE_CLASS_ID_MODEL_OUTPUT]],
+                    #                             device=self.device, dtype=torch.float)
+
+                    # predn 应该包含你希望保存到json的物体的bbox(模型空间), conf, coco_category_id
+                    # 对于语义分割，我们通常只有一个"物体"——即我们分割的类别
+                    # bbox [x1,y1,x2,y2], conf, coco_json_cat_id
+                    predn_entry_for_json = torch.tensor([[0, 0, model_w, model_h, 1.0, COCO_CROP_LINE_CATEGORY_ID]],
+                                                        device=self.device, dtype=torch.float)
+
+                    pred_masks_input_for_json = pred_mask_single_class_indices.unsqueeze(
+                        -1).cpu().numpy()  # [model_H, model_W, 1]
+
+                    self.pred_to_json_seg(predn_entry_for_json,
+                                          batch['im_file'][count],
+                                          pred_masks_input_for_json,
+                                          CROP_LINE_CLASS_ID_MODEL_OUTPUT,
+                                          original_shape,
+                                          current_img_shape,
+                                          ratio_pad,
+                                          task_name)
+
     def finalize_metrics(self, *args, **kwargs):
         """Set final values for metrics speed and confusion matrix."""
         for i, labels_name in enumerate(self.data['labels_list']):
 
             self.metrics[i].speed = self.speed
             self.metrics[i].confusion_matrix = self.confusion_matrix[labels_name]
+
+        ##### LXD #####
+        self.write_and_evaluate_final_json()
+        ##### LXD #####
 
     def get_stats(self):
         """Returns metrics statistics and results dictionary."""
@@ -646,99 +688,200 @@ class MultiValidator(BaseValidator):
             with open(file, 'a') as f:
                 f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
-    def pred_to_json_det(self, predn, filename):
+    def pred_to_json_det(self, predn, filename, task_name):
         """Serialize YOLO predictions to COCO json format."""
         stem = Path(filename).stem
         image_id = int(stem) if stem.isnumeric() else stem
         box = ops.xyxy2xywh(predn[:, :4])  # xywh
         box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
         for p, b in zip(predn.tolist(), box.tolist()):
-            self.jdict.append({
+            self.my_jdict[task_name].append({
                 'image_id': image_id,
                 'category_id': self.class_map[int(p[5])],
                 'bbox': [round(x, 3) for x in b],
                 'score': round(p[4], 5)})
 
-    def pred_to_json_seg(self, predn, filename, pred_masks):
-        """Save one JSON result."""
-        # Example result = {"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}
-        from pycocotools.mask import encode  # noqa
-
-        def single_encode(x):
-            """Encode predicted masks as RLE and append results to jdict."""
-            rle = encode(np.asarray(x[:, :, None], order='F', dtype='uint8'))[0]
-            rle['counts'] = rle['counts'].decode('utf-8')
-            return rle
-
+    def pred_to_json_seg(self,
+                         predn,
+                         filename,
+                         pred_masks_input_semantic,  # 这是模型输出的分割图 [model_H, model_W]
+                         crop_line_class_id_from_model,
+                         original_shape,  # 新增：原始图像形状 (h, w)
+                         current_img_shape,  # 新增：当前模型输入图像形状 (h, w) after letterbox
+                         ratio_pad,
+                         task_name):  # 新增：(ratio, (pad_w, pad_h))
+        """
+        Save one JSON result with polygons for a specific class from a semantic mask.
+        Coordinates are scaled to original image space.
+        """
         stem = Path(filename).stem
-        image_id = int(stem) if stem.isnumeric() else stem
-        box = ops.xyxy2xywh(predn[:, :4])  # xywh
-        box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
-        pred_masks = np.transpose(pred_masks, (2, 0, 1))
-        with ThreadPool(NUM_THREADS) as pool:
-            rles = pool.map(single_encode, pred_masks)
-        for i, (p, b) in enumerate(zip(predn.tolist(), box.tolist())):
-            self.jdict.append({
-                'image_id': image_id,
-                'category_id': self.class_map[int(p[5])],
-                'bbox': [round(x, 3) for x in b],
-                'score': round(p[4], 5),
-                'segmentation': rles[i]})
+        image_id_for_json = int(stem) if stem.isnumeric() else stem
 
-    def eval_json_det(self, stats):
-        """Evaluates YOLO output in JSON format and returns performance statistics."""
-        if self.args.save_json and self.is_coco and len(self.jdict):
-            anno_json = self.data['path'] / 'annotations/instances_val2017.json'  # annotations
-            pred_json = self.save_dir / 'predictions.json'  # predictions
-            LOGGER.info(f'\nEvaluating pycocotools mAP using {pred_json} and {anno_json}...')
-            try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
-                check_requirements('pycocotools>=2.0.6')
-                from pycocotools.coco import COCO  # noqa
-                from pycocotools.cocoeval import COCOeval  # noqa
+        pred_boxes_model_space = predn[:, :4].clone()
 
-                for x in anno_json, pred_json:
-                    assert x.is_file(), f'{x} file not found'
-                anno = COCO(str(anno_json))  # init annotations api
-                pred = anno.loadRes(str(pred_json))  # init predictions api (must pass string, not Path)
-                eval = COCOeval(anno, pred, 'bbox')
-                if self.is_coco:
-                    eval.params.imgIds = [int(Path(x).stem) for x in self.dataloader.dataset.im_files]  # images to eval
-                eval.evaluate()
-                eval.accumulate()
-                eval.summarize()
-                stats[self.metrics.keys[-1]], stats[self.metrics.keys[-2]] = eval.stats[:2]  # update mAP50-95 and mAP50
-            except Exception as e:
-                LOGGER.warning(f'pycocotools unable to run: {e}')
-        return stats
+        # 确保 current_img_shape 和 original_shape 是 (h, w) 顺序
+        # ops.scale_boxes 内部会处理类型，通常没问题
+        scaled_boxes_orig_space = ops.scale_boxes(current_img_shape, pred_boxes_model_space, original_shape,
+                                                  ratio_pad=ratio_pad)
+        scaled_boxes_xywh_orig_space = ops.xyxy2xywh(scaled_boxes_orig_space)
+
+        for i, (p_list, scaled_bbox_xywh) in enumerate(zip(predn.tolist(), scaled_boxes_xywh_orig_space.tolist())):
+            coco_category_id_for_json = int(p_list[5])
+
+            semantic_mask_hw = pred_masks_input_semantic[:, :, 0]
+            binary_mask_for_crop_line = (semantic_mask_hw == crop_line_class_id_from_model).astype(np.uint8) * 255
+
+            polygons_for_class = []
+            if np.any(binary_mask_for_crop_line):
+                contours, _ = cv2.findContours(binary_mask_for_crop_line,
+                                               cv2.RETR_EXTERNAL,
+                                               cv2.CHAIN_APPROX_SIMPLE)
+                for contour in contours:
+                    if contour.shape[0] >= 3:
+                        poly_points_model_space = contour.squeeze(axis=1)  # Shape (N, 2), dtype is likely int
+
+                        # 修改点：确保坐标是浮点数类型
+                        poly_points_model_space_float = poly_points_model_space.astype(np.float32)
+
+                        scaled_poly_points_np = ops.scale_coords(current_img_shape,
+                                                                 poly_points_model_space_float.copy(),
+                                                                 original_shape,
+                                                                 ratio_pad=ratio_pad
+                                                                 )
+
+                        scaled_poly_points = scaled_poly_points_np.round().astype(float)  # COCO通常接受浮点
+                        poly = scaled_poly_points.flatten().tolist()
+                        polygons_for_class.append(poly)
+
+            self.my_jdict[task_name].append({
+                'image_id': image_id_for_json,
+                'category_id': self.class_map[coco_category_id_for_json],
+                'bbox': [round(x, 3) for x in scaled_bbox_xywh],
+                'score': round(p_list[4], 5),
+                'segmentation': polygons_for_class
+            })
+
+    # def eval_json_det(self, stats):
+    #     """Evaluates YOLO output in JSON format and returns performance statistics."""
+    #     if self.args.save_json and self.is_coco and len(self.jdict):
+    #         anno_json = self.data['path'] / 'annotations/instances_val2017.json'  # annotations
+    #         pred_json = self.save_dir / 'predictions.json'  # predictions
+    #         LOGGER.info(f'\nEvaluating pycocotools mAP using {pred_json} and {anno_json}...')
+    #         try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
+    #             check_requirements('pycocotools>=2.0.6')
+    #             from pycocotools.coco import COCO  # noqa
+    #             from pycocotools.cocoeval import COCOeval  # noqa
+    #
+    #             for x in anno_json, pred_json:
+    #                 assert x.is_file(), f'{x} file not found'
+    #             anno = COCO(str(anno_json))  # init annotations api
+    #             pred = anno.loadRes(str(pred_json))  # init predictions api (must pass string, not Path)
+    #             eval = COCOeval(anno, pred, 'bbox')
+    #             if self.is_coco:
+    #                 eval.params.imgIds = [int(Path(x).stem) for x in self.dataloader.dataset.im_files]  # images to eval
+    #             eval.evaluate()
+    #             eval.accumulate()
+    #             eval.summarize()
+    #             stats[self.metrics.keys[-1]], stats[self.metrics.keys[-2]] = eval.stats[:2]  # update mAP50-95 and mAP50
+    #         except Exception as e:
+    #             LOGGER.warning(f'pycocotools unable to run: {e}')
+    #     return stats
+    #
+    #
+    # def eval_json_seg(self, stats):
+    #     """Return COCO-style object detection evaluation metrics."""
+    #     if self.args.save_json and self.is_coco and len(self.jdict):
+    #         anno_json = self.data['path'] / 'annotations/instances_val2017.json'  # annotations
+    #         pred_json = self.save_dir / 'predictions.json'  # predictions
+    #         LOGGER.info(f'\nEvaluating pycocotools mAP using {pred_json} and {anno_json}...')
+    #         try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
+    #             check_requirements('pycocotools>=2.0.6')
+    #             from pycocotools.coco import COCO  # noqa
+    #             from pycocotools.cocoeval import COCOeval  # noqa
+    #
+    #             for x in anno_json, pred_json:
+    #                 assert x.is_file(), f'{x} file not found'
+    #             anno = COCO(str(anno_json))  # init annotations api
+    #             pred = anno.loadRes(str(pred_json))  # init predictions api (must pass string, not Path)
+    #             for i, eval in enumerate([COCOeval(anno, pred, 'bbox'), COCOeval(anno, pred, 'segm')]):
+    #                 if self.is_coco:
+    #                     eval.params.imgIds = [int(Path(x).stem) for x in self.dataloader.dataset.im_files]  # im to eval
+    #                 eval.evaluate()
+    #                 eval.accumulate()
+    #                 eval.summarize()
+    #                 idx = i * 4 + 2
+    #                 stats[self.metrics.keys[idx + 1]], stats[
+    #                     self.metrics.keys[idx]] = eval.stats[:2]  # update mAP50-95 and mAP50
+    #         except Exception as e:
+    #             LOGGER.warning(f'pycocotools unable to run: {e}')
+    #     return stats
+
+    def write_and_evaluate_final_json(self):
+        """
+        Writes separate JSON files for each task and evaluates them.
+        This should be called at the end of the validation loop.
+        """
+        if not self.args.save_json:
+            return
+
+        LOGGER.info('\nSaving and evaluating results for each task...')
+        final_stats = {}
+
+        for task_name, data_list in self.my_jdict.items():
+            if not data_list:
+                LOGGER.warning(f"No JSON data to save for task: {task_name}")
+                continue
+
+            # 1. 创建任务特定的JSON文件名
+            task_type = 'det' if 'det' in task_name else 'seg'
+            pred_json_path = self.save_dir / f'predictions_{task_type}_{Path(task_name).stem}.json'
+
+            # 2. 写入独立的JSON文件
+            LOGGER.info(f"Saving {task_type} predictions to {pred_json_path}...")
+            with open(pred_json_path, 'w') as f:
+                json.dump(data_list, f)
+
+            # 3. 调用相应的评估函数
+            if self.is_coco:
+                anno_json = self.data['path'] / 'annotations/instances_val2017.json'
+                if not anno_json.is_file():
+                    LOGGER.warning(f"Annotation file not found at {anno_json}, skipping COCO eval for {task_name}.")
+                    continue
+
+                try:
+                    from pycocotools.coco import COCO
+                    from pycocotools.cocoeval import COCOeval
+
+                    anno = COCO(str(anno_json))
+                    pred = anno.loadRes(str(pred_json_path))
+
+                    if 'det' in task_name:
+                        LOGGER.info(f'Evaluating pycocotools mAP (bbox) for task: {task_name}...')
+                        eval = COCOeval(anno, pred, 'bbox')
+                        if self.is_coco:
+                            eval.params.imgIds = [int(Path(x).stem) for x in self.dataloader.dataset.im_files]
+                        eval.evaluate()
+                        eval.accumulate()
+                        eval.summarize()
+                        # stats[self.metrics.keys[-1]], stats[self.metrics.keys[-2]] = eval.stats[:2]
+                        LOGGER.info(f"Box mAP50-95: {eval.stats[0]:.3f}, Box mAP50: {eval.stats[1]:.3f}")
 
 
-    def eval_json_seg(self, stats):
-        """Return COCO-style object detection evaluation metrics."""
-        if self.args.save_json and self.is_coco and len(self.jdict):
-            anno_json = self.data['path'] / 'annotations/instances_val2017.json'  # annotations
-            pred_json = self.save_dir / 'predictions.json'  # predictions
-            LOGGER.info(f'\nEvaluating pycocotools mAP using {pred_json} and {anno_json}...')
-            try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
-                check_requirements('pycocotools>=2.0.6')
-                from pycocotools.coco import COCO  # noqa
-                from pycocotools.cocoeval import COCOeval  # noqa
+                    elif 'seg' in task_name:
+                        LOGGER.info(f'Evaluating pycocotools mAP (segm) for task: {task_name}...')
+                        eval = COCOeval(anno, pred, 'segm')
+                        if self.is_coco:
+                            eval.params.imgIds = [int(Path(x).stem) for x in self.dataloader.dataset.im_files]
+                        eval.evaluate()
+                        eval.accumulate()
+                        eval.summarize()
+                        # stats[self.metrics.keys[idx+1]], stats[self.metrics.keys[idx]] = eval.stats[:2]
+                        LOGGER.info(f"Mask mAP50-95: {eval.stats[0]:.3f}, Mask mAP50: {eval.stats[1]:.3f}")
 
-                for x in anno_json, pred_json:
-                    assert x.is_file(), f'{x} file not found'
-                anno = COCO(str(anno_json))  # init annotations api
-                pred = anno.loadRes(str(pred_json))  # init predictions api (must pass string, not Path)
-                for i, eval in enumerate([COCOeval(anno, pred, 'bbox'), COCOeval(anno, pred, 'segm')]):
-                    if self.is_coco:
-                        eval.params.imgIds = [int(Path(x).stem) for x in self.dataloader.dataset.im_files]  # im to eval
-                    eval.evaluate()
-                    eval.accumulate()
-                    eval.summarize()
-                    idx = i * 4 + 2
-                    stats[self.metrics.keys[idx + 1]], stats[
-                        self.metrics.keys[idx]] = eval.stats[:2]  # update mAP50-95 and mAP50
-            except Exception as e:
-                LOGGER.warning(f'pycocotools unable to run: {e}')
-        return stats
+                except Exception as e:
+                    LOGGER.warning(f'pycocotools unable to run for {task_name}: {e}')
+
+        return final_stats
 
 
 def val(cfg=DEFAULT_CFG, use_python=False):

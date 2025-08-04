@@ -4,6 +4,7 @@ warnings.filterwarnings('ignore')
 warnings.simplefilter('ignore')
 import torch, yaml, cv2, os, shutil, sys
 import numpy as np
+import gc # <--- 1. 导入垃圾回收模
 
 np.random.seed(0)
 import matplotlib.pyplot as plt
@@ -364,6 +365,10 @@ class yolov8_multitask_heatmap:
                     seg_success = self.process_segmentation(img_full_path, segmentation_save_file)
                     if not seg_success: print(f"✗ Segmentation heatmap failed: {img_name}")
                     # else: print(f"✓ Segmentation heatmap saved: {segmentation_save_file}")
+
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
         else:
             img_name = os.path.basename(img_path)
             print(f"Processing single image: {img_name} (DetL:{det_layers_str}, SegL:{seg_layers_str})...")
@@ -381,7 +386,7 @@ class yolov8_multitask_heatmap:
 
 def get_params():
     params = {
-        'weight': 'runs/20250406-n-DICS_Res_add_v11_1_Seg_1_DGCST_3/weights/best.pt',
+        'weight': 'runs/revised/noReuse/best.pt',
         'device': 'cuda:0' if torch.cuda.is_available() else 'cpu',
         'method': 'GradCAM',
         'detection_layers': [],
@@ -414,4 +419,4 @@ if __name__ == '__main__':
         renormalize=config_params['renormalize']
     )
 
-    heatmap_generator(r'D:/navigationData/ImagesForYOLOv8Mutil_3/images/test', 'heatmap/MYOLOA')
+    heatmap_generator(r'D:/navigationData/ImagesForYOLOv8Mutil_4/images/test', r'E:\热力图\noReuse')

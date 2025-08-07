@@ -41,7 +41,7 @@ This project is based on and extends the work of [You Only Look at Once for Real
 ![visualization.png](pic/visualization.png)
   
 ## Dataset  
-This study introduces the **SeedlingStemRow (SSR) dataset**, comprising field images of sugarcane, corn, and rice during seedling stages, with annotations for crop stems and crop rows.  
+This study introduces the **SeedlingStemRow (SSR) dataset**, comprising field images of sugarcane/corn/rice/kale/cabbage during seedling stages, with annotations for crop stems and crop rows.  
 - **Total Images:** 1207  
 - **Annotations:** 34440 crop annotations and 1207 crop row segmentation annotations.  
 - **Availability:** The dataset is publicly available on Kaggle:  

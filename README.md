@@ -5,7 +5,7 @@
   
 This project is based on and extends the work of [You Only Look at Once for Real-time and Generic Multi-Task](https://github.com/JiayuanWang-JW/YOLOv8-multi-task). We express our gratitude to the original authors for their foundational work.
 
-![YOLO-SSR.jpg](pic/YOLO-SSR.jpg)
+![YOLO-SSR.jpg](pic/YOLO-SSR.png)
 
 ## Model Architecture Highlights  
 - **Tri-Path Adaptive Convolution (TriPAC):** A novel module integrated into the backbone for efficient multi-scale feature capture.  

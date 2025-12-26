@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO , AGPL-3.0 license
 
 import math
 import random
@@ -644,8 +644,18 @@ class LetterBox:
 
         if shape[::-1] != new_unpad:  # resize
             img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
-        top, bottom = int(round(dh.item() - 0.1)), int(round(dh.item() + 0.1))
-        left, right = int(round(dw.item() - 0.1)), int(round(dw.item() + 0.1))
+        # top, bottom = int(round(dh.item() - 0.1)), int(round(dh.item() + 0.1))
+        # left, right = int(round(dw.item() - 0.1)), int(round(dw.item() + 0.1))
+
+        ##### LXD ##### 2025/12/20
+        # CHeck if item() and TensorRT 10 fixed
+        dh = dh.item() if hasattr(dh, 'item') else dh
+        dw = dw.item() if hasattr(dw, 'item') else dw
+
+        top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+        left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+        ##### LXD #####
+
         img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT,
                                  value=(114, 114, 114))  # add border
 

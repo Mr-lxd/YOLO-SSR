@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Ultralytics YOLO , AGPL-3.0 license
 """
 Export a YOLOv8 PyTorch model to other formats. TensorFlow exports authored by https://github.com/zldrobit
 
@@ -446,8 +446,10 @@ class Exporter:
 
         builder = trt.Builder(logger)
         config = builder.create_builder_config()
-        config.max_workspace_size = workspace * 1 << 30
-        # config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, workspace << 30)  # fix TRT 8.4 deprecation notice
+        # config.max_workspace_size = workspace * 1 << 30
+        ##### LXD #####
+        config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, workspace << 30)  # fix TRT 8.4 deprecation notice
+        ##### LXD #####
 
         flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
         network = builder.create_network(flag)
@@ -477,13 +479,25 @@ class Exporter:
             config.set_flag(trt.BuilderFlag.FP16)
 
         # Write file
-        with builder.build_engine(network, config) as engine, open(f, 'wb') as t:
-            # Metadata
-            meta = json.dumps(self.metadata)
-            t.write(len(meta).to_bytes(4, byteorder='little', signed=True))
-            t.write(meta.encode())
-            # Model
-            t.write(engine.serialize())
+        # with builder.build_engine(network, config) as engine, open(f, 'wb') as t:
+        #     # Metadata
+        #     meta = json.dumps(self.metadata)
+        #     t.write(len(meta).to_bytes(4, byteorder='little', signed=True))
+        #     t.write(meta.encode())
+        #     # Model
+        #     t.write(engine.serialize())
+
+        ##### LXD ##### 2025/12/20
+        # TensorRT 10 fixed
+        plan = builder.build_serialized_network(network, config)
+        if plan:
+            with open(f, 'wb') as t:
+                # Metadata
+                meta = json.dumps(self.metadata)
+                t.write(len(meta).to_bytes(4, byteorder='little', signed=True))
+                t.write(meta.encode())
+                # Model
+                t.write(plan)
 
         return f, None
 

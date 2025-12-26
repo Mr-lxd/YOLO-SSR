@@ -56,7 +56,9 @@ def check_imgsz(imgsz, stride=32, min_dim=1, max_dim=2, floor=0):
         (List[int]): Updated image size.
     """
     # Convert stride to integer if it is a tensor
-    print(stride)
+    ##### LXD #####
+    # print(stride)
+    ##### LXD #####
     stride = int(stride.max() if isinstance(stride, torch.Tensor) else stride)
 
 

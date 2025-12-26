@@ -274,18 +274,11 @@ class MultiValidator(BaseValidator):
             if self.args.plots and self.batch_i < 3:
                 self.plot_masks[task_name].append(pred_mask.cpu())  # filter top 15 to plot
 
-            # 获取当前图像的原始尺寸、模型输入尺寸和 ratio_pad
             original_shape = batch['ori_shape'][count]  # (orig_H, orig_W)
             current_img_shape = batch['img'][count].shape[1:]  # (model_H, model_W)
             ratio_pad = batch['ratio_pad'][count] if 'ratio_pad' in batch else None  # (ratio, (pad_w, pad_h))
 
-            # 如果 ratio_pad 不可用，你可能需要从 dataloader 或 dataset 对象中获取这些信息，
-            # 这通常是在图像预处理时计算和存储的。
             if ratio_pad is None:
-                # Fallback or error - this info is crucial for scaling
-                # For example, if rect=False and no padding, ratio might be min(input_sz/orig_h, input_sz/orig_w)
-                # and pad would be (0,0). This is a simplification.
-                # A robust way is to ensure letterbox outputs this.
                 LOGGER.warning("ratio_pad not found in batch. Coordinates might not scale correctly for COCO JSON.")
 
             pred_mask_single_class_indices = class_indices_masks[count]  # [model_H, model_W]
@@ -293,17 +286,8 @@ class MultiValidator(BaseValidator):
             if self.args.save_json:
                 crop_line_pixels = (pred_mask_single_class_indices == CROP_LINE_CLASS_ID_MODEL_OUTPUT)
                 if torch.any(crop_line_pixels):
-                    # bbox_for_crop_line 仍然是在模型输入空间的bbox，用于predn
-                    # predn[:,:4] 应该是 xyxy 格式
-                    # 使用 pred_mask_single_class_indices 的形状来定义全图 bbox
-                    model_h, model_w = pred_mask_single_class_indices.shape
-                    # xyxy, 类别是模型输出的类别ID，因为后面会用COCO_CROP_LINE_CATEGORY_ID替换
-                    # predn_entry = torch.tensor([[0, 0, model_w, model_h, 1.0, CROP_LINE_CLASS_ID_MODEL_OUTPUT]],
-                    #                             device=self.device, dtype=torch.float)
 
-                    # predn 应该包含你希望保存到json的物体的bbox(模型空间), conf, coco_category_id
-                    # 对于语义分割，我们通常只有一个"物体"——即我们分割的类别
-                    # bbox [x1,y1,x2,y2], conf, coco_json_cat_id
+                    model_h, model_w = pred_mask_single_class_indices.shape
                     predn_entry_for_json = torch.tensor([[0, 0, model_w, model_h, 1.0, COCO_CROP_LINE_CATEGORY_ID]],
                                                         device=self.device, dtype=torch.float)
 
@@ -719,8 +703,6 @@ class MultiValidator(BaseValidator):
 
         pred_boxes_model_space = predn[:, :4].clone()
 
-        # 确保 current_img_shape 和 original_shape 是 (h, w) 顺序
-        # ops.scale_boxes 内部会处理类型，通常没问题
         scaled_boxes_orig_space = ops.scale_boxes(current_img_shape, pred_boxes_model_space, original_shape,
                                                   ratio_pad=ratio_pad)
         scaled_boxes_xywh_orig_space = ops.xyxy2xywh(scaled_boxes_orig_space)
@@ -832,16 +814,13 @@ class MultiValidator(BaseValidator):
                 LOGGER.warning(f"No JSON data to save for task: {task_name}")
                 continue
 
-            # 1. 创建任务特定的JSON文件名
             task_type = 'det' if 'det' in task_name else 'seg'
             pred_json_path = self.save_dir / f'predictions_{task_type}_{Path(task_name).stem}.json'
 
-            # 2. 写入独立的JSON文件
             LOGGER.info(f"Saving {task_type} predictions to {pred_json_path}...")
             with open(pred_json_path, 'w') as f:
                 json.dump(data_list, f)
 
-            # 3. 调用相应的评估函数
             if self.is_coco:
                 anno_json = self.data['path'] / 'annotations/instances_val2017.json'
                 if not anno_json.is_file():

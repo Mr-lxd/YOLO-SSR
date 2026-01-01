@@ -9,7 +9,7 @@
 This project is based on the work of [You Only Look at Once for Real-time and Generic Multi-Task](https://github.com/JiayuanWang-JW/YOLOv8-multi-task). We express our gratitude to the original authors for their foundational work.
 
 > **⚠️ Note:**
-> This repository is currently maintained by a **single contributor** with limited availability. The codebase is undergoing organization and cleanup.
+> This repository is currently maintained by a **single co-author** with limited availability. The codebase is undergoing organization and cleanup.
 
 ![YOLO-SSR.jpg](pic/YOLO-SSR.png)
 

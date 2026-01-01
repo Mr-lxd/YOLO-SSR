@@ -1,9 +1,15 @@
 
 # YOLO-SSR: A Lightweight Model for Synchronized Crop Stem Detection and Row Segmentation  
+
+[![Paper](https://img.shields.io/badge/Paper-Computers%20and%20Electronics%20in%20Agriculture-green)](https://doi.org/10.1016/j.compag.2025.111385)
+[![License](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](LICENSE)
+
+**[YOLO-SSR (YOLO for Synchronized Stem-Row)](https://doi.org/10.1016/j.compag.2025.111385)** is a lightweight deep learning model designed for simultaneous crop stem detection and crop row segmentation, specifically tailored for agricultural navigation line extraction. This work explores the synergistic contribution of these two tasks to enhance autonomous navigation.
   
-**YOLO-SSR (YOLO for Synchronized Stem-Row)** is a lightweight deep learning model designed for simultaneous crop stem detection and crop row segmentation, specifically tailored for agricultural navigation line extraction. This work explores the synergistic contribution of these two tasks to enhance autonomous navigation.
-  
-This project is based on and extends the work of [You Only Look at Once for Real-time and Generic Multi-Task](https://github.com/JiayuanWang-JW/YOLOv8-multi-task). We express our gratitude to the original authors for their foundational work.
+This project is based on the work of [You Only Look at Once for Real-time and Generic Multi-Task](https://github.com/JiayuanWang-JW/YOLOv8-multi-task). We express our gratitude to the original authors for their foundational work.
+
+> **⚠️ Note:**
+> This repository is currently maintained by a **single contributor** with limited availability. The codebase is undergoing organization and cleanup.
 
 ![YOLO-SSR.jpg](pic/YOLO-SSR.png)
 
@@ -53,7 +59,22 @@ Major improvements have been implemented (marked as ##### LXD ##### in the code)
   
 ## Dataset  
 This study introduces the **SeedlingStemRow (SSR) dataset**, comprising field images of sugarcane/corn/rice/kale/cabbage during seedling stages, with annotations for crop stems and crop rows.  
-- **Total Images:** 1207  
-- **Annotations:** 34440 crop annotations and 1207 crop row segmentation annotations.  
+- **Total Images:** 1472  
+- **Annotations:** 42765 crop annotations and 1472 crop row segmentation annotations.  
 - **Availability:** The dataset is publicly available on Kaggle:  
-[SSR Dataset on Kaggle](https://www.kaggle.com/datasets/xxdxdxd/seedlingstemrow)  
+[SSR Dataset on Kaggle](https://www.kaggle.com/datasets/xxdxdxd/seedlingstemrow)
+
+## Citation
+
+If you use this code or dataset in your research, please cite our paper:
+
+```bibtex
+@article{LAI2026111385,
+  title = {A lightweight deep learning model for synchronized crop stem detection and row segmentation at the seedling stage: Exploring their contribution to agricultural navigation line extraction},
+  journal = {Computers and Electronics in Agriculture},
+  volume = {243},
+  pages = {111385},
+  year = {2026},
+  doi = {10.1016/j.compag.2025.111385},
+  author = {Xindong Lai, Jianzhi Huang, Yongmei Mo, Hongwei Li, Tianyun Dong, Tao Wu, Deqiang He}
+}

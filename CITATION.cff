@@ -1,20 +1,43 @@
 cff-version: 1.2.0
+message: "If you use this software, please cite our paper as below."
+title: "YOLO-SSR: A Lightweight Model for Synchronized Crop Stem Detection and Row Segmentation"
+authors:
+  - family-names: Lai
+    given-names: Xindong
+  - family-names: Huang
+    given-names: Jianzhi
+  - family-names: Mo
+    given-names: Yongmei
+  - family-names: Li
+    given-names: Hongwei
+  - family-names: Dong
+    given-names: Tianyun
+  - family-names: Wu
+    given-names: Tao
+  - family-names: He
+    given-names: Deqiang
+repository-code: "https://github.com/Mr-lxd/YOLO-SSR"
+license: AGPL-3.0
 preferred-citation:
-  type: software
-  message: If you use this software, please cite it as below.
+  type: article
+  title: "A lightweight deep learning model for synchronized crop stem detection and row segmentation at the seedling stage: Exploring their contribution to agricultural navigation line extraction"
   authors:
-  - family-names: Jocher
-    given-names: Glenn
-    orcid: "https://orcid.org/0000-0001-5950-6979"
-  - family-names: Chaurasia
-    given-names: Ayush
-    orcid: "https://orcid.org/0000-0002-7603-6750"
-  - family-names: Qiu
-    given-names: Jing
-    orcid: "https://orcid.org/0000-0003-3783-7069"
-  title: "YOLO by Ultralytics"
-  version: 8.0.0
-  # doi: 10.5281/zenodo.3908559  # TODO
-  date-released: 2023-1-10
-  license: AGPL-3.0
-  url: "https://github.com/ultralytics/ultralytics"
+  - family-names: Lai
+    given-names: Xindong
+  - family-names: Huang
+    given-names: Jianzhi
+  - family-names: Mo
+    given-names: Yongmei
+  - family-names: Li
+    given-names: Hongwei
+  - family-names: Dong
+    given-names: Tianyun
+  - family-names: Wu
+    given-names: Tao
+  - family-names: He
+    given-names: Deqiang
+  journal: "Computers and Electronics in Agriculture"
+  year: 2026
+  volume: 243
+  pages: 111385
+  doi: "10.1016/j.compag.2025.111385"

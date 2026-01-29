@@ -53,9 +53,17 @@ Major improvements have been implemented (marked as ##### LXD ##### in the code)
 | SparseInst(ResNet50) | 91.4 | 27 | 39.3 | 37.99 | 1.23 | 0.88 | 0.66 | 14.58 | 69.12 | 31.617M | 99.22 | 
 | ours(ins) | 96.1 | 74.6 | 63.7 | **89.71** | 0.74 | 0.52 | **0.49** | 154.3 | 6.48 | 2.45M | 10.5 | 
   
-## Visual Results
+## Field Testing & Navigation Demo
 
-![visualization.png](pic/visualization.png)
+> [!IMPORTANT]
+> **Work in Progress:** The field navigation control system and the full experimental analysis presented below are part of a manuscript currently **under review**. The visual perception part is powered by the published **YOLO-SSR** model.
+
+We conducted field trials in sugarcane seedling fields to validate the effectiveness of YOLO-SSR in real-world agricultural navigation.
+
+| **Onboard View (Robot Perspective)** | **External View (Handheld Camera)** |
+| :----------------------------------: | :---------------------------------: |
+| [![Onboard View](https://img.youtube.com/vi/9zEZijBc8Hg/maxresdefault.jpg)](https://www.youtube.com/watch?v=9zEZijBc8Hg) | [![External View](https://img.youtube.com/vi/cB94GSANAJE)/maxresdefault.jpg](https://www.youtube.com/watch?v=cB94GSANAJE) |
+| *Adaptive ridge following* | *Stable navigation in uneven terrain* |
   
 ## Dataset  
 This study introduces the **SeedlingStemRow (SSR) dataset**, comprising field images of sugarcane/corn/rice/kale/cabbage during seedling stages, with annotations for crop stems and crop rows.  

@@ -62,7 +62,7 @@ We conducted field trials in sugarcane seedling fields to validate the effective
 
 | **Onboard View (Robot Perspective)** | **External View (Handheld Camera)** |
 | :----------------------------------: | :---------------------------------: |
-| [![Onboard View](https://img.youtube.com/vi/9zEZijBc8Hg/hqdefault.jpg)](https://www.youtube.com/watch?v=9zEZijBc8Hg) | [![External View](https://img.youtube.com/vi/cB94GSANAJE)/hqdefault.jpg](https://www.youtube.com/watch?v=cB94GSANAJE) |
+| [![Onboard View](https://img.youtube.com/vi/9zEZijBc8Hg/hqdefault.jpg)](https://www.youtube.com/watch?v=9zEZijBc8Hg)<br>*(Click to Watch)* | [![External View](https://img.youtube.com/vi/cB94GSANAJE/hqdefault.jpg)](https://www.youtube.com/watch?v=cB94GSANAJE)<br>*(Click to Watch)* |
 | *Adaptive ridge following* | *Stable navigation in uneven terrain* |
   
 ## Dataset  

@@ -8,15 +8,15 @@
   
 This project is based on the work of [You Only Look at Once for Real-time and Generic Multi-Task](https://github.com/JiayuanWang-JW/YOLOv8-multi-task). We express our gratitude to the original authors for their foundational work.
 
-> **⚠️ Note:**
-> This repository is currently maintained by a **single co-author** with limited availability. The codebase is undergoing organization and cleanup.
-
 ![YOLO-SSR.jpg](pic/YOLO-SSR.png)
 
 ## Model Architecture Highlights  
 - **Tri-Path Adaptive Convolution (TriPAC):** A novel module integrated into the backbone for efficient multi-scale feature capture.  
 - **Enhanced Detection Branch:** Incorporates Space-to-Depth Convolution (SPDC) for shallow feature enhancement and Dynamic Group Shuffle Transformer (DGST) for optimized contextual information.  
 - **Optimized Segmentation Branch:** Features a minimalist neck and head, reusing features from the detection branch and incorporating TriPAC.
+
+> **⚠️ Note:**
+> The TriPAC module implementation can be found at ultralytics/nn/modules/module_ours.py.
 
 ## Implementation Improvements
 Major improvements have been implemented (marked as ##### LXD ##### in the code):
@@ -56,7 +56,7 @@ Major improvements have been implemented (marked as ##### LXD ##### in the code)
 ## Field Testing & Navigation Demo
 
 > [!IMPORTANT]
-> **Work in Progress:** The field navigation control system and the full experimental analysis presented below are part of a manuscript currently **under review**. The visual perception part is powered by the published **YOLO-SSR** model.
+> The field navigation control system is powered by the published **YOLO-SSR** model. For the full navigation method, please refer to: LI Hongwei, LAI Xindong, YAO Ye, WU Tao, JIN Zhenzhen, HE Deqiang. Autonomous Robotic Row-following Navigation Method for Ratoon-emerged Sugarcane Seedling Fields[J]. *Transactions of the Chinese Society for Agricultural Machinery*, 2026, 57(9): 127-137. DOI: [10.6041/j.issn.1000-1298.2026.09.012](http://dx.doi.org/10.6041/j.issn.1000-1298.2026.09.012)
 
 We conducted field trials in sugarcane seedling fields to validate the effectiveness of YOLO-SSR in real-world agricultural navigation.
 
